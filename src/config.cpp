@@ -11,6 +11,13 @@ Config Config::loadFromFile(const std::string& filepath) {
         if (root["name"]) config.name = root["name"].as<std::string>();
         if (root["description"]) config.description = root["description"].as<std::string>();
 
+        if (root["ssh_global_config"]) {
+            if (root["ssh_global_config"]["host"]) config.ssh_global_config.host = root["ssh_global_config"]["host"].as<std::string>();
+            if (root["ssh_global_config"]["port"]) config.ssh_global_config.port = root["ssh_global_config"]["port"].as<int>();
+            if (root["ssh_global_config"]["username"]) config.ssh_global_config.username = root["ssh_global_config"]["username"].as<std::string>();
+            if (root["ssh_global_config"]["password"]) config.ssh_global_config.password = root["ssh_global_config"]["password"].as<std::string>();
+        }
+
         if (root["triggers"] && root["triggers"].IsSequence()) {
             for (const auto& trigger : root["triggers"]) {
                 config.triggers.push_back(trigger.as<std::map<std::string, std::string>>());
@@ -37,6 +44,11 @@ Config Config::loadFromFile(const std::string& filepath) {
                         step.on_failure.push_back(action.as<std::map<std::string, std::string>>());
                     }
                 }
+               if (step_node["ssh_config"] && step_node["ssh_config"].IsMap()) {
+                    for (YAML::const_iterator it = step_node["ssh_config"].begin(); it != step_node["ssh_config"].end(); ++it) {
+                        step.ssh_config[it->first.as<std::string>()] = it->second.as<std::string>();
+                    }
+                }
                 config.steps.push_back(step);
             }
         }
@@ -59,6 +71,13 @@ bool Config::saveToFile(const std::string& filepath) const {
         out << YAML::BeginMap;
         out << YAML::Key << "name" << YAML::Value << name;
         out << YAML::Key << "description" << YAML::Value << description;
+
+        out << YAML::Key << "ssh_global_config" << YAML::Value << YAML::BeginMap;
+        out << YAML::Key << "host" << YAML::Value << ssh_global_config.host;
+        out << YAML::Key << "port" << YAML::Value << ssh_global_config.port;
+        out << YAML::Key << "username" << YAML::Value << ssh_global_config.username;
+        out << YAML::Key << "password" << YAML::Value << ssh_global_config.password;
+        out << YAML::EndMap;
 
         out << YAML::Key << "triggers" << YAML::Value << YAML::BeginSeq;
         for (const auto& trigger : triggers) {
@@ -87,6 +106,9 @@ bool Config::saveToFile(const std::string& filepath) const {
                     out << action;
                 }
                 out << YAML::EndSeq;
+            }
+            if (!step.ssh_config.empty()) {
+                out << YAML::Key << "ssh_config" << YAML::Value << step.ssh_config;
             }
             out << YAML::EndMap;
         }
