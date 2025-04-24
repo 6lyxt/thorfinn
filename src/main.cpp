@@ -6,7 +6,7 @@
 #include <chrono>
 #include "config.h"
 #include "pipeline.h"
-#include "file_watcher.h" // Include the new header
+#include "file_watcher.h"
 
 namespace fs = std::filesystem;
 

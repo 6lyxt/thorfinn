@@ -29,7 +29,6 @@ Config Config::loadFromFile(const std::string& filepath) {
                 EventTrigger event_trigger;
                 if (event_node["type"]) event_trigger.type = event_node["type"].as<std::string>();
                 if (event_node["description"]) event_trigger.description = event_node["description"].as<std::string>();
-                // Load the rest of the event configuration into the 'config' map
                 for (YAML::const_iterator it = event_node.begin(); it != event_node.end(); ++it) {
                     if (it->first.as<std::string>() != "type" && it->first.as<std::string>() != "description") {
                         event_trigger.config[it->first.as<std::string>()] = it->second.as<std::string>();
