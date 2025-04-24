@@ -41,11 +41,15 @@ desktop pipelining tool written in c++
 ## usage
 - `./thorfinn make`: to prepare a pipeline in your current directory.
 - `./thorfinn exec <?path>`: executes the pipeline in given / current directory. path argument is optional
+- `./thorfinn listen <?path>`: listens for defined events to trigger pipeline execution in the given / current directory. path argument is optional
 
 ### trigger types
 - `manual`: only manual execution, when directly ran through `exec`.
-- [not fully implemented] `event[event-type]`: event based execution, for example "onMouseClick". a full list of available events will be published soon.
-- [not fully implemented] `automatic[cron]`: cron based execution
+- `on_event[event-type]`: event-based execution. The following event types are currently supported:
+    - `file_change`: triggers when a specified file is modified. Configuration requires a `path` key.
+    - `interval`: triggers the pipeline at a specified interval. Configuration requires a `seconds` key.
+    - `webhook`: [not fully implemented] triggers when a webhook is received on a specific endpoint.
+- `automatic[cron]`: [not fully implemented] cron-based execution.
 
 ## disclaimer
 code should not be used in production, just a learning project for myself blah blah blah you know how it goes
