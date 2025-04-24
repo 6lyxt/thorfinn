@@ -121,6 +121,7 @@ void Pipeline::closeSSHConnection() {
         }
         libssh2_session_disconnect(sshSession, "Closing session");
         libssh2_session_free(sshSession);
+        // socket gone?
         sshSession = nullptr;
         std::cout << "SSH connection closed." << std::endl;
     }
@@ -229,6 +230,7 @@ void Pipeline::handleStepActions(const std::vector<std::map<std::string, std::st
                 LIBSSH2_CHANNEL* channel = libssh2_channel_open_session(sshSession);
                 if (channel) {
                     if (libssh2_channel_exec(channel, sshCommand.c_str()) == 0) {
+                        // thanks mr. stackoverflow & libssh docs
                         char buffer[0x4000];
                         ssize_t nbytes;
                         while ((nbytes = libssh2_channel_read(channel, buffer, sizeof(buffer))) > 0) {

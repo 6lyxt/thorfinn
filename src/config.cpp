@@ -24,6 +24,21 @@ Config Config::loadFromFile(const std::string& filepath) {
             }
         }
 
+        if (root["on_event"] && root["on_event"].IsSequence()) {
+            for (const auto& event_node : root["on_event"]) {
+                EventTrigger event_trigger;
+                if (event_node["type"]) event_trigger.type = event_node["type"].as<std::string>();
+                if (event_node["description"]) event_trigger.description = event_node["description"].as<std::string>();
+                // Load the rest of the event configuration into the 'config' map
+                for (YAML::const_iterator it = event_node.begin(); it != event_node.end(); ++it) {
+                    if (it->first.as<std::string>() != "type" && it->first.as<std::string>() != "description") {
+                        event_trigger.config[it->first.as<std::string>()] = it->second.as<std::string>();
+                    }
+                }
+                config.on_event.push_back(event_trigger);
+            }
+        }
+
         if (root["steps"] && root["steps"].IsSequence()) {
             for (const auto& step_node : root["steps"]) {
                 Step step;
@@ -44,7 +59,7 @@ Config Config::loadFromFile(const std::string& filepath) {
                         step.on_failure.push_back(action.as<std::map<std::string, std::string>>());
                     }
                 }
-               if (step_node["ssh_config"] && step_node["ssh_config"].IsMap()) {
+                if (step_node["ssh_config"] && step_node["ssh_config"].IsMap()) {
                     for (YAML::const_iterator it = step_node["ssh_config"].begin(); it != step_node["ssh_config"].end(); ++it) {
                         step.ssh_config[it->first.as<std::string>()] = it->second.as<std::string>();
                     }
@@ -82,6 +97,18 @@ bool Config::saveToFile(const std::string& filepath) const {
         out << YAML::Key << "triggers" << YAML::Value << YAML::BeginSeq;
         for (const auto& trigger : triggers) {
             out << trigger;
+        }
+        out << YAML::EndSeq;
+
+        out << YAML::Key << "on_event" << YAML::Value << YAML::BeginSeq;
+        for (const auto& event_trigger : on_event) {
+            out << YAML::BeginMap;
+            out << YAML::Key << "type" << YAML::Value << event_trigger.type;
+            out << YAML::Key << "description" << YAML::Value << event_trigger.description;
+            for (const auto& pair : event_trigger.config) {
+                out << YAML::Key << pair.first << YAML::Value << pair.second;
+            }
+            out << YAML::EndMap;
         }
         out << YAML::EndSeq;
 

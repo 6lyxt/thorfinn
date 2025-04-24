@@ -19,13 +19,20 @@ struct SSHGlobalConfig {
     std::string host;
     int port = 22;
     std::string username;
-    std::string password; // not prod ready
+    std::string password;
+};
+
+struct EventTrigger {
+    std::string type;
+    std::string description;
+    std::map<std::string, std::string> config;
 };
 
 struct Config {
     std::string name;
     std::string description;
     std::vector<std::map<std::string, std::string>> triggers;
+    std::vector<EventTrigger> on_event;
     std::vector<Step> steps;
     std::vector<std::map<std::string, std::string>> results;
     SSHGlobalConfig ssh_global_config;

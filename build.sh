@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SOURCE_FILES="src/main.cpp src/config.cpp src/pipeline.cpp"
+SOURCE_FILES="src/main.cpp src/config.cpp src/pipeline.cpp src/file_watcher.cpp"
 OUTPUT_EXECUTABLE="thorfinn"
 
 YAML_CPP_INCLUDE_DIR="/opt/homebrew/Cellar/yaml-cpp/0.8.0/include"
