@@ -33,10 +33,17 @@ desktop pipelining tool written in c++
 
 ```
 
-## building
+## building (dev & quick testing)
 - run the provided `build.sh` file. 
 - make sure you have `yaml-cpp` installed.
 - if the provided build file doesn't work for you, check the given lib paths.
+
+## building (prod)
+- make sure you have `cmake` installed on your system
+- create a build directory using `mkdir build` 
+- navigate into that directory using `ls build`
+- run `cmake ..`
+- after the process has finished, run `make`
 
 ## usage
 - `./thorfinn make`: to prepare a pipeline in your current directory.
