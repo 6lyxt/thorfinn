@@ -23,8 +23,8 @@ triggers:
     description: Execute manually via 'thorfinn exec'
 on_event:
   - type: file_change
-    description: Trigger when /tmp/monitor.txt changes
-    path: /tmp/monitor.txt
+    description: Trigger when any file in /tmp/thorfinn_watch_dir changes
+    directory: /tmp/thorfinn_watch_dir # Changed to directory
   - type: interval
     description: Trigger every 5 seconds
     seconds: 5
@@ -73,14 +73,27 @@ void eventLoop(const Config& config, const std::string& workingDir) {
     for (const auto& event_trigger : config.on_event) {
         if (event_trigger.type == "file_change") {
             try {
-                std::string path = event_trigger.config.at("path");
-                Thorfinn::FileWatcher::watchFile(path, [&](const std::string& changedPath) {
-                    std::cout << "File change detected for: " << changedPath << std::endl;
+                std::string directoryToWatch = event_trigger.config.at("path");
+                if (!fs::exists(directoryToWatch)) {
+                    std::cerr << "Error: Directory not watchable" << std::endl;
+                }
+
+                Thorfinn::FileWatcher::watchDirectory(directoryToWatch, [&](Thorfinn::FileWatcher::FileSystemEventType eventType, const std::string& changedPath) {
+                    std::string eventTypeStr;
+                    switch (eventType) {
+                        case Thorfinn::FileWatcher::FileSystemEventType::Modified: eventTypeStr = "Modified"; break;
+                        case Thorfinn::FileWatcher::FileSystemEventType::Created:  eventTypeStr = "Created";  break;
+                        case Thorfinn::FileWatcher::FileSystemEventType::Deleted:  eventTypeStr = "Deleted";  break;
+                        default: eventTypeStr = "Unknown"; break;
+                    }
+                    std::cout << "File system event detected: " << eventTypeStr << " - " << changedPath << std::endl;
                     handleEvent(config, workingDir);
                 });
-                std::cout << "Watching file: " << path << " for changes..." << std::endl;
+                std::cout << "Watching directory: " << directoryToWatch << " for changes..." << std::endl;
             } catch (const std::out_of_range& e) {
-                std::cerr << "Error: 'path' not found in file_change event." << std::endl;
+                std::cerr << "Error: 'path' key not found in file_change event configuration." << std::endl;
+            } catch (const fs::filesystem_error& e) {
+                std::cerr << "Filesystem error setting up watcher for " << event_trigger.config.at("path") << ": " << e.what() << std::endl;
             }
         } else if (event_trigger.type == "interval") {
             try {
@@ -102,7 +115,6 @@ void eventLoop(const Config& config, const std::string& workingDir) {
             std::string endpoint = event_trigger.config.at("endpoint");
             std::string method = event_trigger.config.at("method");
             std::cerr << "Warning: Webhook event handling is not yet implemented." << std::endl;
-            // todo: add webhook
         } else {
             std::cerr << "Warning: Unknown event type: " << event_trigger.type << std::endl;
         }

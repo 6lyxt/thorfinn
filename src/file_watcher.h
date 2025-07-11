@@ -3,13 +3,22 @@
 
 #include <string>
 #include <functional>
+#include <map>
+#include <filesystem>
 
 namespace Thorfinn {
 namespace FileWatcher {
 
-using FileChangeCallback = std::function<void(const std::string&)>;
+enum class FileSystemEventType {
+    Modified,
+    Created,
+    Deleted
+};
 
-void watchFile(const std::string& filePath, FileChangeCallback callback);
+using FileSystemChangeCallback = std::function<void(FileSystemEventType, const std::string&)>;
+
+void watchDirectory(const std::string& directoryPath, FileSystemChangeCallback callback);
+void watchFile(const std::string& filePath, FileSystemChangeCallback callback); // todo: implement file_change type
 
 }}
 

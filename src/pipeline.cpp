@@ -38,6 +38,7 @@ bool Pipeline::establishSSHConnection(const std::string& host, int port, const s
         return false;
     }
 
+
     struct sockaddr_in sin;
     sin.sin_family = AF_INET;
     sin.sin_port = htons(port);
