@@ -58,5 +58,10 @@ desktop pipelining tool written in c++
     - `webhook`: [not fully implemented] triggers when a webhook is received on a specific endpoint.
 - `automatic[cron]`: [not fully implemented] cron-based execution.
 
+### ssh authentication
+- `ssh_global_config` and the `establish_ssh` action accept `host`, `port`, `username` and either:
+    - `private_key` (path, `~` allowed), optional `public_key` and `passphrase`: public key authentication, or
+    - `password`: password authentication, used only when no `private_key` is set.
+
 ## disclaimer
 code should not be used in production, just a learning project for myself blah blah blah you know how it goes

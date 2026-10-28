@@ -12,6 +12,15 @@
 #include <fcntl.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <cstdlib>
+
+static std::string expandHome(const std::string& path) {
+    const char* home = std::getenv("HOME");
+    if (path.rfind("~/", 0) == 0 && home) {
+        return std::string(home) + path.substr(1);
+    }
+    return path;
+}
 
 Pipeline::Pipeline(const Config& config, const std::string& workingDir) : config_(config), workingDir_(workingDir), sshSession(nullptr), sshChannel(nullptr) {
     if (libssh2_init(0) != 0) {
@@ -29,7 +38,10 @@ Pipeline::~Pipeline() {
 }
 
 
-bool Pipeline::establishSSHConnection(const std::string& host, int port, const std::string& username, const std::string& password) {
+bool Pipeline::establishSSHConnection(const SSHGlobalConfig& sshConfig) {
+    const std::string& host = sshConfig.host;
+    const int port = sshConfig.port;
+    const std::string& username = sshConfig.username;
     closeSSHConnection();
 
     int sock = socket(AF_INET, SOCK_STREAM, 0);
@@ -76,11 +88,26 @@ bool Pipeline::establishSSHConnection(const std::string& host, int port, const s
         return false;
     }
 
-    if (libssh2_userauth_password(sshSession, username.c_str(), password.c_str()) != LIBSSH2_ERROR_NONE) {
+    int authResult;
+    std::string authMethod;
+    if (!sshConfig.private_key.empty()) {
+        authMethod = "public key";
+        std::string privateKey = expandHome(sshConfig.private_key);
+        std::string publicKey = expandHome(sshConfig.public_key);
+        authResult = libssh2_userauth_publickey_fromfile(sshSession, username.c_str(),
+            publicKey.empty() ? nullptr : publicKey.c_str(),
+            privateKey.c_str(),
+            sshConfig.passphrase.empty() ? nullptr : sshConfig.passphrase.c_str());
+    } else {
+        authMethod = "password";
+        authResult = libssh2_userauth_password(sshSession, username.c_str(), sshConfig.password.c_str());
+    }
+
+    if (authResult != LIBSSH2_ERROR_NONE) {
         char* err_msg;
         int err_code;
         libssh2_session_last_error(sshSession, &err_msg, &err_code, 0);
-        std::cerr << "Error during SSH password authentication: " << err_msg << " (" << err_code << ")" << std::endl;
+        std::cerr << "Error during SSH " << authMethod << " authentication: " << err_msg << " (" << err_code << ")" << std::endl;
         closeSSHConnection();
         close(sock);
         return false;
@@ -90,23 +117,29 @@ bool Pipeline::establishSSHConnection(const std::string& host, int port, const s
     return true;
 }
 
-bool Pipeline::establishSSHConnection(const SSHGlobalConfig& sshConfig) {
-    return establishSSHConnection(sshConfig.host, sshConfig.port, sshConfig.username, sshConfig.password);
-}
-
 bool Pipeline::establishSSHConnection(const std::map<std::string, std::string>& sshConfig) {
-    if (sshConfig.count("host") && sshConfig.count("username") && sshConfig.count("password")) {
-        int port = 22;
+    if (sshConfig.count("host") && sshConfig.count("username") && (sshConfig.count("password") || sshConfig.count("private_key"))) {
+        auto value = [&](const char* key) {
+            auto it = sshConfig.find(key);
+            return it == sshConfig.end() ? std::string() : it->second;
+        };
+        SSHGlobalConfig resolved;
+        resolved.host = value("host");
+        resolved.username = value("username");
+        resolved.password = value("password");
+        resolved.private_key = value("private_key");
+        resolved.public_key = value("public_key");
+        resolved.passphrase = value("passphrase");
         if (sshConfig.count("port")) {
             try {
-                port = std::stoi(sshConfig.at("port"));
+                resolved.port = std::stoi(sshConfig.at("port"));
             } catch (const std::invalid_argument& e) {
                 std::cerr << "Warning: Invalid SSH port specified: " << sshConfig.at("port") << ". Using default port 22." << std::endl;
             } catch (const std::out_of_range& e) {
                 std::cerr << "Warning: SSH port out of range: " << sshConfig.at("port") << ". Using default port 22." << std::endl;
             }
         }
-        return establishSSHConnection(sshConfig.at("host"), port, sshConfig.at("username"), sshConfig.at("password"));
+        return establishSSHConnection(resolved);
     } else {
         std::cerr << "Warning: Incomplete SSH configuration provided for step." << std::endl;
         return false;

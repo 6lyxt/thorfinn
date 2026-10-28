@@ -16,6 +16,9 @@ Config Config::loadFromFile(const std::string& filepath) {
             if (root["ssh_global_config"]["port"]) config.ssh_global_config.port = root["ssh_global_config"]["port"].as<int>();
             if (root["ssh_global_config"]["username"]) config.ssh_global_config.username = root["ssh_global_config"]["username"].as<std::string>();
             if (root["ssh_global_config"]["password"]) config.ssh_global_config.password = root["ssh_global_config"]["password"].as<std::string>();
+            if (root["ssh_global_config"]["private_key"]) config.ssh_global_config.private_key = root["ssh_global_config"]["private_key"].as<std::string>();
+            if (root["ssh_global_config"]["public_key"]) config.ssh_global_config.public_key = root["ssh_global_config"]["public_key"].as<std::string>();
+            if (root["ssh_global_config"]["passphrase"]) config.ssh_global_config.passphrase = root["ssh_global_config"]["passphrase"].as<std::string>();
         }
 
         if (root["triggers"] && root["triggers"].IsSequence()) {
@@ -91,6 +94,9 @@ bool Config::saveToFile(const std::string& filepath) const {
         out << YAML::Key << "port" << YAML::Value << ssh_global_config.port;
         out << YAML::Key << "username" << YAML::Value << ssh_global_config.username;
         out << YAML::Key << "password" << YAML::Value << ssh_global_config.password;
+        out << YAML::Key << "private_key" << YAML::Value << ssh_global_config.private_key;
+        out << YAML::Key << "public_key" << YAML::Value << ssh_global_config.public_key;
+        out << YAML::Key << "passphrase" << YAML::Value << ssh_global_config.passphrase;
         out << YAML::EndMap;
 
         out << YAML::Key << "triggers" << YAML::Value << YAML::BeginSeq;

@@ -17,7 +17,9 @@ ssh_global_config:
   host: "your_remote_host"
   port: 22
   username: "your_username"
-  password: "your_password" # Warning: Insecure for production!
+  private_key: "~/.ssh/id_ed25519"
+  # passphrase: "your_key_passphrase"
+  # password: "your_password" # used only without private_key. Warning: Insecure for production!
 triggers:
   - type: manual
     description: Execute manually via 'thorfinn exec'

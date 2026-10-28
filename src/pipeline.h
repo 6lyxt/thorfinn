@@ -11,7 +11,7 @@ public:
     Pipeline(const Config& config, const std::string& workingDir);
     ~Pipeline();
     bool execute();
-    bool establishSSHConnection(const std::string& host, int port, const std::string& username, const std::string& password);
+    bool establishSSHConnection(const SSHGlobalConfig& sshConfig);
     void closeSSHConnection();
     LIBSSH2_SESSION* getSSHSession() const;
 
@@ -22,7 +22,6 @@ private:
     LIBSSH2_CHANNEL* sshChannel;
     bool executeStep(const Step& step);
     void handleStepActions(const std::vector<std::map<std::string, std::string>>& actions, const std::string& stepName, const std::string& output);
-    bool establishSSHConnection(const SSHGlobalConfig& sshConfig);
     bool establishSSHConnection(const std::map<std::string, std::string>& sshConfig);
 };
 

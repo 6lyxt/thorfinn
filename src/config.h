@@ -20,6 +20,9 @@ struct SSHGlobalConfig {
     int port = 22;
     std::string username;
     std::string password;
+    std::string private_key;
+    std::string public_key;
+    std::string passphrase;
 };
 
 struct EventTrigger {
