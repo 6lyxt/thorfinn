@@ -4,6 +4,7 @@
 #include "config.h"
 #include <libssh2.h>
 #include <functional>
+#include <optional>
 #include <string>
 
 class Pipeline {
@@ -20,6 +21,7 @@ private:
     std::string workingDir_;
     LIBSSH2_SESSION* sshSession;
     LIBSSH2_CHANNEL* sshChannel;
+    std::optional<std::vector<const Step*>> resolveStepOrder() const;
     bool executeStep(const Step& step);
     void handleStepActions(const std::vector<std::map<std::string, std::string>>& actions, const std::string& stepName, const std::string& output);
     bool establishSSHConnection(const std::map<std::string, std::string>& sshConfig);

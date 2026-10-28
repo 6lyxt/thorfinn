@@ -12,7 +12,9 @@
 #include <fcntl.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <algorithm>
 #include <cstdlib>
+#include <set>
 
 static std::string expandHome(const std::string& path) {
     const char* home = std::getenv("HOME");
@@ -168,16 +170,63 @@ LIBSSH2_SESSION* Pipeline::getSSHSession() const {
 bool Pipeline::execute() {
     std::cout << "Executing pipeline: " << config_.name << " in " << workingDir_ << std::endl;
 
-    for (const auto& step : config_.steps) {
-        std::cout << "\n--- Executing step: " << step.name << " ---" << std::endl;
-        if (!executeStep(step)) {
-            std::cerr << "Step '" << step.name << "' failed." << std::endl;
+    auto orderedSteps = resolveStepOrder();
+    if (!orderedSteps) {
+        return false;
+    }
+
+    for (const Step* step : *orderedSteps) {
+        std::cout << "\n--- Executing step: " << step->name << " ---" << std::endl;
+        if (!executeStep(*step)) {
+            std::cerr << "Step '" << step->name << "' failed." << std::endl;
             return false;
         }
     }
 
     std::cout << "\n--- Pipeline execution finished ---" << std::endl;
     return true;
+}
+
+std::optional<std::vector<const Step*>> Pipeline::resolveStepOrder() const {
+    std::set<std::string> stepNames;
+    for (const auto& step : config_.steps) {
+        if (!stepNames.insert(step.name).second) {
+            std::cerr << "Error: Duplicate step name '" << step.name << "'." << std::endl;
+            return std::nullopt;
+        }
+    }
+    for (const auto& step : config_.steps) {
+        for (const auto& dependency : step.dependencies) {
+            if (!stepNames.count(dependency)) {
+                std::cerr << "Error: Step '" << step.name << "' depends on unknown step '" << dependency << "'." << std::endl;
+                return std::nullopt;
+            }
+        }
+    }
+
+    std::vector<const Step*> ordered;
+    std::set<std::string> scheduled;
+    while (ordered.size() < config_.steps.size()) {
+        bool progressed = false;
+        for (const auto& step : config_.steps) {
+            bool ready = !scheduled.count(step.name) && std::all_of(step.dependencies.begin(), step.dependencies.end(),
+                [&](const std::string& dependency) { return scheduled.count(dependency) > 0; });
+            if (ready) {
+                ordered.push_back(&step);
+                scheduled.insert(step.name);
+                progressed = true;
+            }
+        }
+        if (!progressed) {
+            std::cerr << "Error: Circular dependency, cannot schedule steps:";
+            for (const auto& step : config_.steps) {
+                if (!scheduled.count(step.name)) std::cerr << " '" << step.name << "'";
+            }
+            std::cerr << std::endl;
+            return std::nullopt;
+        }
+    }
+    return ordered;
 }
 
 bool Pipeline::executeStep(const Step& step) {

@@ -58,6 +58,11 @@ desktop pipelining tool written in c++
     - `webhook`: [not fully implemented] triggers when a webhook is received on a specific endpoint.
 - `automatic[cron]`: [not fully implemented] cron-based execution.
 
+### step dependencies
+- steps list the names of other steps under `dependencies`. a step runs only after all of them.
+- steps without a dependency relation keep their order from the file.
+- unknown dependencies, duplicate step names and circular dependencies abort the pipeline before any step runs.
+
 ### ssh authentication
 - `ssh_global_config` and the `establish_ssh` action accept `host`, `port`, `username` and either:
     - `private_key` (path, `~` allowed), optional `public_key` and `passphrase`: public key authentication, or
